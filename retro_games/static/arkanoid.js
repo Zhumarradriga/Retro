@@ -4,9 +4,9 @@ let bricks;
 let score = 0;
 let gameOver = false;
 
-
 function setup() {
-  createCanvas(400, 400);
+  let canvas = createCanvas(400, 400);
+  canvas.parent('gameContainer'); // Привязываем холст к div#gameContainer
   paddle = { x: 200, y: 380, w: 80, h: 10 };
   ball = { x: 200, y: 360, dx: 4, dy: -4 };
   bricks = [];
@@ -35,6 +35,11 @@ function keyPressed() {
   if (keyCode === LEFT_ARROW) paddle.x -= 20;
   if (keyCode === RIGHT_ARROW) paddle.x += 20;
   paddle.x = constrain(paddle.x, 0, width - paddle.w);
+  if (keyCode === 82 && gameOver) { // Клавиша R
+    score = 0;
+    gameOver = false;
+    setup(); // Перезапуск игры
+  }
 }
 
 function drawPaddle() {

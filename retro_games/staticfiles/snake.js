@@ -5,7 +5,8 @@ let gameOver = false;
 let direction = { x: 1, y: 0 }; // Начальное направление (вправо)
 
 function setup() {
-  createCanvas(400, 400);
+  let canvas=createCanvas(400, 400);
+  canvas.parent('gameContainer');
   frameRate(10);
   snake = [{ x: 10, y: 10 }]; // Начальная позиция змейки
   food = { x: floor(random(20)), y: floor(random(20)) }; // Случайная позиция еды
@@ -34,6 +35,11 @@ function keyPressed() {
     direction = { x: 0, y: -1 };
   } else if (keyCode === DOWN_ARROW && direction.y === 0) {
     direction = { x: 0, y: 1 };
+  }
+  if (keyCode === 82 && gameOver) { // Клавиша R
+    score = 0;
+    gameOver = false;
+    setup(); // Перезапуск игры
   }
 }
 
@@ -75,30 +81,27 @@ function updateSnake() {
 }
 
 function sendScore() {
-    let playerName = prompt("Game Over! Enter your name:");
-    if (playerName) {
-      fetch('/save_score/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify({ player_name: playerName, score: score, game: 'snake' }) // Используем slug
-      });
-    }
+  const accessToken = localStorage.getItem('access_token');
+  if (!accessToken) {
+      alert('Please log in to submit your score.');
+      window.location.href = '/login/';
+      return;
   }
-
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
+  const options = {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ score: score, game: 'snake' })
+  };
+  fetchWithAuth('/save_score/', options)
+      .then(response => response.json())
+      .then(data => {
+          if (data.status === 'success') {
+              alert('Score submitted!');
+          } else {
+              alert('Error submitting score.');
+          }
+      })
+      .catch(error => console.error('Error:', error));
 }

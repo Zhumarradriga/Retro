@@ -1,10 +1,13 @@
+
+
 let grid;
 let currentPiece;
 let score = 0;
 let gameOver = false;
 
 function setup() {
-  createCanvas(300, 600);
+  let canvas=createCanvas(300, 600);
+  canvas.parent('gameContainer');
   grid = Array(20).fill().map(() => Array(10).fill(0));
   currentPiece = newPiece();
 }
@@ -30,6 +33,11 @@ function keyPressed() {
     if (keyCode === RIGHT_ARROW) currentPiece.x++;
     if (keyCode === DOWN_ARROW) movePieceDown();
     if (keyCode === UP_ARROW) rotatePiece();
+  }
+  if (keyCode === 82 && gameOver) { // Клавиша R
+    score = 0;
+    gameOver = false;
+    setup(); // Перезапуск игры
   }
 }
 
@@ -129,30 +137,27 @@ function rotatePiece() {
 }
 
 function sendScore() {
-    let playerName = prompt("Game Over! Enter your name:");
-    if (playerName) {
-      fetch('/save_score/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify({ player_name: playerName, score: score, game: 'tetris' }) // Используем slug
-      });
-    }
+  const accessToken = localStorage.getItem('access_token');
+  if (!accessToken) {
+      alert('Please log in to submit your score.');
+      window.location.href = '/login/';
+      return;
   }
-
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
+  const options = {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ score: score, game: 'tetris' })
+  };
+  fetchWithAuth('/save_score/', options)
+      .then(response => response.json())
+      .then(data => {
+          if (data.status === 'success') {
+              alert('Score submitted!');
+          } else {
+              alert('Error submitting score.');
+          }
+      })
+      .catch(error => console.error('Error:', error));
 }

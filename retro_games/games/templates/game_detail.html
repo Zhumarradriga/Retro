@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load cart_tags %}
+
+{% block title %}{{ game.name }} - Детали{% endblock %}
+
+{% block content %}
+    <h1>{{ game.name }}</h1>
+    <div class="game-detail">
+        <div class="game-image">
+            {% if game.cover_image %}
+                <img src="{{ game.cover_image.url }}" alt="{{ game.name }}" class="game-cover">
+            {% else %}
+                <img src="{% static 'default_cover.jpg' %}" alt="Нет обложки" class="game-cover">
+            {% endif %}
+        </div>
+        <div class="game-info">
+            <p><strong>Описание:</strong> {{ game.description|default:"Описание отсутствует." }}</p>
+            <p><strong>Средний рейтинг:</strong> {{ game.average_rating|floatformat:1 }}/5</p>
+            <p><strong>Отзывы:</strong> {{ game.review_count }}</p>
+            <p><strong>Цена:</strong> ${{ game.price }}</p>
+            {% if user.is_authenticated %}
+                {% if purchased %}
+                    <p style="color: #08d9d6;">Куплено</p>
+                    <a href="{% url 'games:play_game' game.slug %}" class="button">Играть</a>
+                {% else %}
+                    <form action="{% url 'cart:cart_add' game.id %}" method="post" class="cart-form">
+                        {% csrf_token %}
+                        {{ cart_add_form }}
+                        <button type="submit" class="button">Добавить в корзину</button>
+                    </form>
+                {% endif %}
+            {% else %}
+                <p><a href="{% url 'login' %}" class="button">Войдите, чтобы купить</a></p>
+            {% endif %}
+        </div>
+    </div>
+    <h2>Таблица лидеров</h2>
+    {% if leaderboard %}
+        <table class="leaderboard-table">
+            <thead>
+                <tr>
+                    <th>Место</th>
+                    <th>Пользователь</th>
+                    <th>Лучший счёт</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in leaderboard %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ entry.user__username }}</td>
+                        <td>{{ entry.best_score }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Результаты пока отсутствуют.</p>
+    {% endif %}
+    {% if user.is_authenticated %}
+        <h2>Оставить отзыв</h2>
+        <form method="post" class="review-form">
+            {% csrf_token %}
+            {{ review_form.as_p }}
+            <button type="submit" class="button">Отправить отзыв</button>
+        </form>
+    {% endif %}
+    <h2>Отзывы</h2>
+    {% if reviews %}
+        <div class="reviews">
+            {% for review in reviews %}
+                <div class="review-card">
+                    <p><strong>{{ review.user.username }}</strong> ({{ review.rating }}/5)</p>
+                    <p>{{ review.comment|default:"Комментарий отсутствует." }}</p>
+                    <p><em>{{ review.created_at|date:"d F Y" }}</em></p>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>Отзывы пока отсутствуют.</p>
+    {% endif %}
+{% endblock %}

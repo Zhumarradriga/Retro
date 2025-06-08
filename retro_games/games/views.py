@@ -1,17 +1,19 @@
+from django.db import IntegrityError
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login, logout
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
 from django.contrib.auth.decorators import login_required
 from .models import Game, HighScore, Review
 from orders.models import Order, OrderItem
 from .serializers import UserSerializer
 import json
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Max
 from cart.forms import CartAddGameForm
+from django.contrib import messages
+from .forms import ReviewForm
 
 def home(request):
     search_query = request.GET.get('search', '').strip()
@@ -51,6 +53,51 @@ def home(request):
         'purchased_games': purchased_games,
     })
 
+def game_detail(request, game_slug):
+    game = get_object_or_404(Game, slug=game_slug)
+    reviews = game.reviews.all()
+    purchased = False
+    can_review = False
+    if request.user.is_authenticated:
+        purchased = OrderItem.objects.filter(
+            order__user=request.user,
+            game=game,
+            order__paid=True
+        ).exists()
+        can_review = purchased and not game.reviews.filter(user=request.user).exists()
+    
+    # Получение лучших результатов пользователей
+    leaderboard = HighScore.objects.filter(game=game).values('user__username').annotate(
+        best_score=Max('score')
+    ).order_by('-best_score')[:10]  # Ограничим топ-10
+
+    cart_add_form = CartAddGameForm()
+    review_form = None
+    if can_review and request.method == 'POST':
+        review_form = ReviewForm(request.POST)
+        if review_form.is_valid():
+            review = review_form.save(commit=False)
+            review.user = request.user
+            review.game = game
+            try:
+                review.save()
+                messages.success(request, 'Отзыв успешно отправлен!')
+                return redirect('games:game_detail', game_slug=game_slug)
+            except IntegrityError:
+                messages.error(request, 'Вы уже оставили отзыв для этой игры.')
+    elif can_review:
+        review_form = ReviewForm()
+    
+    return render(request, 'game_detail.html', {
+        'game': game,
+        'reviews': reviews,
+        'purchased': purchased,
+        'can_review': can_review,
+        'cart_add_form': cart_add_form,
+        'review_form': review_form,
+        'leaderboard': leaderboard,
+    })
+
 @login_required
 def play_game(request, game_slug):
     game = get_object_or_404(Game, slug=game_slug)
@@ -72,18 +119,36 @@ def leaderboard(request):
     games = Game.objects.all()
     return render(request, 'leaderboard.html', {'scores': scores, 'games': games})
 
-@csrf_exempt
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@login_required
 def save_score(request):
-    data = json.loads(request.body)
-    game = get_object_or_404(Game, slug=data['game'])
-    HighScore.objects.create(
-        user=request.user,
-        score=data['score'],
-        game=game
-    )
-    return JsonResponse({'status': 'success'})
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            score = data.get('score')
+            game_slug = data.get('game')
+            game = get_object_or_404(Game, slug=game_slug)
+            
+            # Отладочный вывод
+            print(f"Saving score: user={request.user.username}, game={game.name}, score={score}")
+            
+            # Проверяем, купил ли пользователь игру
+            has_purchased = OrderItem.objects.filter(
+                order__user=request.user,
+                game=game,
+                order__paid=True
+            ).exists()
+            if not has_purchased:
+                return JsonResponse({'status': 'error', 'message': 'Игра не куплена'}, status=403)
+            
+            # Сохраняем результат
+            HighScore.objects.create(user=request.user, game=game, score=score)
+            messages.success(request, 'Очки успешно сохранены!')
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            print(f"Error saving score: {str(e)}")  # Для отладки
+            messages.error(request, 'Ошибка при сохранении очков.')
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Неверный запрос'}, status=400)
 
 def login_view(request):
     if request.method == 'POST':
@@ -92,7 +157,7 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user:
             login(request, user)
-            return redirect('home')
+            return redirect('games:home')
         else:
             return render(request, 'login.html', {'error': 'Invalid credentials'})
     return render(request, 'login.html')
@@ -104,13 +169,13 @@ def register_view(request):
             serializer.save()
             user = authenticate(request, username=request.POST['username'], password=request.POST['password'])
             login(request, user)
-            return redirect('home')
+            return redirect('games:home')
         return render(request, 'register.html', {'errors': serializer.errors})
     return render(request, 'register.html')
 
 def logout_view(request):
     logout(request)
-    return redirect('home')
+    return redirect('games:home')
 
 @csrf_exempt
 @api_view(['POST'])

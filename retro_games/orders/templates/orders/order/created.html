@@ -9,5 +9,5 @@
     <p>Order ID: {{ order.id }}</p>
     <p>Date: {{ order.created_at|date:"F d, Y H:i" }}</p>
     <p>Total: ${{ order.get_total_cost }}</p>
-    <a href="{% url 'home' %}">Back to Home</a>
+    <a href="{% url 'games:home' %}">Back to Home</a>
 {% endblock %}

@@ -6,6 +6,8 @@ class GameAdmin(admin.ModelAdmin):
     list_display = ['name', 'slug', 'price', 'created_at']
     list_editable = ['price']
     prepopulated_fields = {'slug': ('name',)}
+    fields = ['name', 'slug', 'js_file', 'cover_image', 'price', 'description', 'created_at']
+    readonly_fields = ['created_at']
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):

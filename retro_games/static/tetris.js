@@ -6,7 +6,8 @@ let score = 0;
 let gameOver = false;
 
 function setup() {
-  createCanvas(300, 600);
+  let canvas=createCanvas(300, 600);
+  canvas.parent('gameContainer');
   grid = Array(20).fill().map(() => Array(10).fill(0));
   currentPiece = newPiece();
 }
@@ -32,6 +33,11 @@ function keyPressed() {
     if (keyCode === RIGHT_ARROW) currentPiece.x++;
     if (keyCode === DOWN_ARROW) movePieceDown();
     if (keyCode === UP_ARROW) rotatePiece();
+  }
+  if (keyCode === 82 && gameOver) { // Клавиша R
+    score = 0;
+    gameOver = false;
+    setup(); // Перезапуск игры
   }
 }
 

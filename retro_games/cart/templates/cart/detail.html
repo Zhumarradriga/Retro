@@ -5,10 +5,10 @@
 {% block title %}Your Cart{% endblock %}
 
 {% block content %}
-    <h2>Your Cart</h2>
+    <h1>Your Cart</h1>
     {% with total_items=cart|length %}
         {% if total_items > 0 %}
-            <table class="cart" style="width: 100%; border-collapse: collapse;">
+            <table class="cart-table">
                 <thead>
                     <tr>
                         <th>Image</th>
@@ -25,9 +25,9 @@
                             <tr>
                                 <td>
                                     {% if game.cover_image %}
-                                        <img src="{{ game.cover_image.url }}" style="height: 100px; border-radius: 4px;">
+                                        <img src="{{ game.cover_image.url }}">
                                     {% else %}
-                                        <img src="{% static 'default_cover.jpg' %}" style="height: 100px; border-radius: 4px;">
+                                        <img src="{% static 'default_cover.jpg' %}">
                                     {% endif %}
                                 </td>
                                 <td>{{ game.name }}</td>
@@ -36,13 +36,13 @@
                                         {{ item.update_quantity_form.quantity }}
                                         {{ item.update_quantity_form.update }}
                                         {% csrf_token %}
-                                        <input type="submit" value="Update">
+                                        <button type="submit" class="button">Update</button>
                                     </form>
                                 </td>
                                 <td>
                                     <form action="{% url 'cart:cart_remove' game.id %}" method="post">
                                         {% csrf_token %}
-                                        <input type="submit" value="Remove">
+                                        <button type="submit" class="button">Remove</button>
                                     </form>
                                 </td>
                                 <td>${{ item.price }}</td>
@@ -50,19 +50,19 @@
                             </tr>
                         {% endwith %}
                     {% endfor %}
-                    <tr class="total">
+                    <tr>
                         <td colspan="5">Total</td>
                         <td>${{ cart.get_total_price }}</td>
                     </tr>
                 </tbody>
             </table>
-            <p class="text-right">
-                <a href="{% url 'home' %}" class="button-light">Continue Shopping</a>
-                <a href="{% url 'orders:order_create' %}" class="button-light">Proceed to Checkout</a>
+            <p style="text-align: right; margin-top: 20px;">
+                <a href="{% url 'games:home' %}" class="button">Continue Shopping</a>
+                <a href="{% url 'orders:order_create' %}" class="button">Proceed to Checkout</a>
             </p>
         {% else %}
             <p>Your cart is empty.</p>
-            <p><a href="{% url 'home' %}">Return to Home</a></p>
+            <p><a href="{% url 'games:home' %}" class="button">Return to Home</a></p>
         {% endif %}
     {% endwith %}
 {% endblock %}

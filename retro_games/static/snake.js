@@ -5,7 +5,8 @@ let gameOver = false;
 let direction = { x: 1, y: 0 }; // Начальное направление (вправо)
 
 function setup() {
-  createCanvas(400, 400);
+  let canvas=createCanvas(400, 400);
+  canvas.parent('gameContainer');
   frameRate(10);
   snake = [{ x: 10, y: 10 }]; // Начальная позиция змейки
   food = { x: floor(random(20)), y: floor(random(20)) }; // Случайная позиция еды
@@ -34,6 +35,11 @@ function keyPressed() {
     direction = { x: 0, y: -1 };
   } else if (keyCode === DOWN_ARROW && direction.y === 0) {
     direction = { x: 0, y: 1 };
+  }
+  if (keyCode === 82 && gameOver) { // Клавиша R
+    score = 0;
+    gameOver = false;
+    setup(); // Перезапуск игры
   }
 }
 

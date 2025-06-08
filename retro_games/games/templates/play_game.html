@@ -1,19 +1,18 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Играть в {{ game.name }}{% endblock %}
+{% block title %}Play {{ game.name }}{% endblock %}
 
 {% block content %}
-    <h2>{{ game.name }}</h2>
-    {% if game.cover_image %}
-        <img src="{{ game.cover_image.url }}" alt="{{ game.name }}" style="width: 200px; border-radius: 8px;">
-    {% else %}
-        <img src="{% static 'default_cover.jpg' %}" alt="Нет обложки" style="width: 200px; border-radius: 8px;">
-    {% endif %}
-    <p>Наслаждайтесь игрой {{ game.name }}!</p>
-    <!-- Холст для p5.js -->
-    <div id="gameContainer"></div>
-    <!-- Подгрузка p5.js и скриптов -->
+    <h1>{{ game.name }}</h1>
+    <div style="text-align: center;">
+        {% if game.cover_image %}
+            <img src="{{ game.cover_image.url }}" alt="{{ game.name }}" style="max-width: 300px; border-radius: 8px; margin-bottom: 20px;">
+        {% else %}
+            <img src="{% static 'default_cover.jpg' %}" alt="No cover" style="max-width: 300px; border-radius: 8px; margin-bottom: 20px;">
+        {% endif %}
+        <div id="gameContainer" style="background: #162447; padding: 20px; border-radius: 8px; display: inline-block;"></div>
+    </div>
     <script src="{% static 'js/p5.min.js' %}"></script>
     <script src="{% static 'js/auth.js' %}"></script>
     <script src="{% static game.js_file %}"></script>

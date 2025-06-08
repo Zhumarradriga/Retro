@@ -5,9 +5,8 @@
 {% block title %}Retro Games{% endblock %}
 
 {% block content %}
-    <h2>Welcome to Retro Games!</h2>
-    <p><a href="{% url 'cart:cart_detail' %}">Cart ({{ cart|length }})</a></p>
-    <form method="get" action="{% url 'home' %}" class="search-form">
+    <h1>Welcome to Retro Games!</h1>
+    <form method="get" action="{% url 'games:home' %}" class="search-form">
         <input type="text" name="search" placeholder="Search for a game..." value="{{ search_query }}">
         <button type="submit">Search</button>
     </form>
@@ -24,39 +23,39 @@
             <option value="desc" {% if order == 'desc' %}selected{% endif %}>Descending</option>
         </select>
     </div>
-    <form id="sort-form" method="get" action="{% url 'home' %}">
+    <form id="sort-form" method="get" action="{% url 'games:home' %}">
         <input type="hidden" name="search" value="{{ search_query }}">
         <input type="hidden" id="sort_by_hidden" name="sort_by" value="{{ sort_by }}">
         <input type="hidden" id="order_hidden" name="order" value="{{ order }}">
     </form>
     {% if games %}
-        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
             {% for game in games %}
-                <div style="width: 200px; text-align: center;">
-                    <a href="{% url 'play_game' game.slug %}">
+                <div class="game-card">
+                    <a href="{% url 'games:game_detail' game.slug %}">
                         {% if game.cover_image %}
-                            <img src="{{ game.cover_image.url }}" alt="{{ game.name }}" style="width: 100%; height: auto; border-radius: 8px;">
+                            <img src="{{ game.cover_image.url }}" alt="{{ game.name }}">
                         {% else %}
-                            <img src="{% static 'default_cover.jpg' %}" alt="No cover" style="width: 100%; height: auto; border-radius: 8px;">
+                            <img src="{% static 'default_cover.jpg' %}" alt="No cover">
                         {% endif %}
-                        <h3 style="margin: 10px 0;">{{ game.name }}</h3>
+                        <h3>{{ game.name }}</h3>
                     </a>
                     <p>Average Rating: {{ game.average_rating|floatformat:1 }}/5</p>
                     <p>Reviews: {{ game.review_count }}</p>
                     <p>Price: ${{ game.price }}</p>
                     {% if user.is_authenticated %}
                         {% if game in purchased_games %}
-                            <p style="color: green;">Purchased</p>
-                            <a href="{% url 'play_game' game.slug %}" class="button-light">Play</a>
+                            <p style="color: #08d9d6;">Purchased</p>
+                            <a href="{% url 'games:play_game' game.slug %}" class="button">Play</a>
                         {% else %}
                             <form action="{% url 'cart:cart_add' game.id %}" method="post">
                                 {% csrf_token %}
                                 {{ cart_add_form }}
-                                <input type="submit" value="Add to Cart">
+                                <button type="submit" class="button">Add to Cart</button>
                             </form>
                         {% endif %}
                     {% else %}
-                        <p><a href="{% url 'login' %}">Log in to purchase</a></p>
+                        <p><a href="{% url 'login' %}" class="button">Log in to purchase</a></p>
                     {% endif %}
                 </div>
             {% endfor %}
