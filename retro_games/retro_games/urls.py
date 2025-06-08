@@ -5,6 +5,7 @@ from django.conf.urls.static import static
 from games import views
 
 urlpatterns = [
+    path('admin/', admin.site.urls),
     path('', views.home, name='home'),
     path('play/<slug:game_slug>/', views.play_game, name='play_game'),
     path('leaderboard/', views.leaderboard, name='leaderboard'),
@@ -13,6 +14,8 @@ urlpatterns = [
     path('register/', views.register_view, name='register_view'),
     path('logout/', views.logout_view, name='logout'),
     path('api/', include('games.urls_api')),
+    path('orders/', include('orders.urls', namespace='orders')),
+    path('cart/', include('cart.urls', namespace='cart')),
 ]
 
 if settings.DEBUG:

@@ -1,10 +1,12 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load cart_tags %}
 
 {% block title %}Retro Games{% endblock %}
 
 {% block content %}
     <h2>Welcome to Retro Games!</h2>
+    <p><a href="{% url 'cart:cart_detail' %}">Cart ({{ cart|length }})</a></p>
     <form method="get" action="{% url 'home' %}" class="search-form">
         <input type="text" name="search" placeholder="Search for a game..." value="{{ search_query }}">
         <button type="submit">Search</button>
@@ -41,6 +43,21 @@
                     </a>
                     <p>Average Rating: {{ game.average_rating|floatformat:1 }}/5</p>
                     <p>Reviews: {{ game.review_count }}</p>
+                    <p>Price: ${{ game.price }}</p>
+                    {% if user.is_authenticated %}
+                        {% if game in purchased_games %}
+                            <p style="color: green;">Purchased</p>
+                            <a href="{% url 'play_game' game.slug %}" class="button-light">Play</a>
+                        {% else %}
+                            <form action="{% url 'cart:cart_add' game.id %}" method="post">
+                                {% csrf_token %}
+                                {{ cart_add_form }}
+                                <input type="submit" value="Add to Cart">
+                            </form>
+                        {% endif %}
+                    {% else %}
+                        <p><a href="{% url 'login' %}">Log in to purchase</a></p>
+                    {% endif %}
                 </div>
             {% endfor %}
         </div>

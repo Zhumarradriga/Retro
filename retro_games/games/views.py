@@ -5,22 +5,23 @@ from django.contrib.auth import authenticate, login, logout
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
+from django.contrib.auth.decorators import login_required
 from .models import Game, HighScore, Review
+from orders.models import Order, OrderItem
 from .serializers import UserSerializer
 import json
 from django.db.models import Avg, Count
+from cart.forms import CartAddGameForm
 
 def home(request):
     search_query = request.GET.get('search', '').strip()
-    sort_by = request.GET.get('sort_by', 'name')  # По умолчанию сортировка по имени
-    order = request.GET.get('order', 'asc')  # По умолчанию по возрастанию
+    sort_by = request.GET.get('sort_by', 'name')
+    order = request.GET.get('order', 'asc')
 
-    # Фильтрация по поисковому запросу
     games = Game.objects.all()
     if search_query:
         games = games.filter(name__icontains=search_query)
 
-    # Сортировка
     if sort_by == 'rating':
         games = games.annotate(avg_rating=Avg('reviews__rating')).order_by(
             '-avg_rating' if order == 'desc' else 'avg_rating'
@@ -29,23 +30,42 @@ def home(request):
         games = games.annotate(review_count=Count('reviews')).order_by(
             '-review_count' if order == 'desc' else 'review_count'
         )
-    else:  # По умолчанию сортировка по имени
+    else:
         games = games.order_by('-name' if order == 'desc' else 'name')
 
+    # Получаем список купленных игр для авторизованного пользователя
+    purchased_games = []
+    if request.user.is_authenticated:
+        purchased_games = Game.objects.filter(
+            orderitem__order__user=request.user,
+            orderitem__order__paid=True
+        ).distinct()
+
+    cart_add_form = CartAddGameForm()
     return render(request, 'home.html', {
         'games': games,
         'sort_by': sort_by,
         'order': order,
         'search_query': search_query,
+        'cart_add_form': cart_add_form,
+        'purchased_games': purchased_games,
     })
 
+@login_required
 def play_game(request, game_slug):
-    if not request.user.is_authenticated:
-        return redirect('login')
     game = get_object_or_404(Game, slug=game_slug)
-    games = Game.objects.all()
-    reviews = game.reviews.all()
-    return render(request, 'game.html', {'game': game, 'games': games, 'reviews': reviews})
+    # Проверяем, купил ли пользователь игру
+    has_purchased = OrderItem.objects.filter(
+        order__user=request.user,
+        game=game,
+        order__paid=True  # Учитываем только оплаченные заказы
+    ).exists()
+    
+    if not has_purchased:
+        # Если игра не куплена, перенаправляем на страницу корзины
+        return redirect('cart:cart_add', game_id=game.id)
+    
+    return render(request, 'play_game.html', {'game': game})
 
 def leaderboard(request):
     scores = HighScore.objects.select_related('game', 'user')[:10]

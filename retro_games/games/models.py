@@ -7,6 +7,7 @@ class Game(models.Model):
     slug = models.SlugField(max_length=50, unique=True)
     js_file = models.CharField(max_length=100)
     cover_image = models.ImageField(upload_to='game_covers/', blank=True, null=True)  # Поле для обложки
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

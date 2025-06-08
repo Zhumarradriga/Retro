@@ -4,6 +4,7 @@ let bricks;
 let score = 0;
 let gameOver = false;
 
+
 function setup() {
   createCanvas(400, 400);
   paddle = { x: 200, y: 380, w: 80, h: 10 };
