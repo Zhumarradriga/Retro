@@ -5,19 +5,55 @@
 
 {% block content %}
     <h2>Welcome to Retro Games!</h2>
-    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
-        {% for game in games %}
-            <div style="width: 200px; text-align: center;">
-                <a href="{% url 'play_game' game.slug %}">
-                    {% if game.cover_image %}
-                        <img src="{{ game.cover_image.url }}" alt="{{ game.name }}" style="width: 100%; height: auto; border-radius: 8px;">
-                    {% else %}
-                        <img src="{% static 'default_cover.jpg' %}" alt="No cover" style="width: 100%; height: auto; border-radius: 8px;">
-                    {% endif %}
-                    <h3 style="margin: 10px 0;">{{ game.name }}</h3>
-                </a>
-                <p>Average Rating: {{ game.average_rating|floatformat:1 }}/5</p>
-            </div>
-        {% endfor %}
+    <form method="get" action="{% url 'home' %}" class="search-form">
+        <input type="text" name="search" placeholder="Search for a game..." value="{{ search_query }}">
+        <button type="submit">Search</button>
+    </form>
+    <div style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: center;">
+        <label for="sort_by">Sort by:</label>
+        <select id="sort_by" onchange="updateSortForm()">
+            <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name</option>
+            <option value="rating" {% if sort_by == 'rating' %}selected{% endif %}>Average Rating</option>
+            <option value="reviews" {% if sort_by == 'reviews' %}selected{% endif %}>Number of Reviews</option>
+        </select>
+        <label for="order">Order:</label>
+        <select id="order" onchange="updateSortForm()">
+            <option value="asc" {% if order == 'asc' %}selected{% endif %}>Ascending</option>
+            <option value="desc" {% if order == 'desc' %}selected{% endif %}>Descending</option>
+        </select>
     </div>
+    <form id="sort-form" method="get" action="{% url 'home' %}">
+        <input type="hidden" name="search" value="{{ search_query }}">
+        <input type="hidden" id="sort_by_hidden" name="sort_by" value="{{ sort_by }}">
+        <input type="hidden" id="order_hidden" name="order" value="{{ order }}">
+    </form>
+    {% if games %}
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+            {% for game in games %}
+                <div style="width: 200px; text-align: center;">
+                    <a href="{% url 'play_game' game.slug %}">
+                        {% if game.cover_image %}
+                            <img src="{{ game.cover_image.url }}" alt="{{ game.name }}" style="width: 100%; height: auto; border-radius: 8px;">
+                        {% else %}
+                            <img src="{% static 'default_cover.jpg' %}" alt="No cover" style="width: 100%; height: auto; border-radius: 8px;">
+                        {% endif %}
+                        <h3 style="margin: 10px 0;">{{ game.name }}</h3>
+                    </a>
+                    <p>Average Rating: {{ game.average_rating|floatformat:1 }}/5</p>
+                    <p>Reviews: {{ game.review_count }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No games found matching your search.</p>
+    {% endif %}
+    <script>
+        function updateSortForm() {
+            const sortBy = document.getElementById('sort_by').value;
+            const order = document.getElementById('order').value;
+            document.getElementById('sort_by_hidden').value = sortBy;
+            document.getElementById('order_hidden').value = order;
+            document.getElementById('sort-form').submit();
+        }
+    </script>
 {% endblock %}

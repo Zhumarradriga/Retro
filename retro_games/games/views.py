@@ -8,10 +8,36 @@ from rest_framework import status
 from .models import Game, HighScore, Review
 from .serializers import UserSerializer
 import json
+from django.db.models import Avg, Count
 
 def home(request):
+    search_query = request.GET.get('search', '').strip()
+    sort_by = request.GET.get('sort_by', 'name')  # По умолчанию сортировка по имени
+    order = request.GET.get('order', 'asc')  # По умолчанию по возрастанию
+
+    # Фильтрация по поисковому запросу
     games = Game.objects.all()
-    return render(request, 'home.html', {'games': games})
+    if search_query:
+        games = games.filter(name__icontains=search_query)
+
+    # Сортировка
+    if sort_by == 'rating':
+        games = games.annotate(avg_rating=Avg('reviews__rating')).order_by(
+            '-avg_rating' if order == 'desc' else 'avg_rating'
+        )
+    elif sort_by == 'reviews':
+        games = games.annotate(review_count=Count('reviews')).order_by(
+            '-review_count' if order == 'desc' else 'review_count'
+        )
+    else:  # По умолчанию сортировка по имени
+        games = games.order_by('-name' if order == 'desc' else 'name')
+
+    return render(request, 'home.html', {
+        'games': games,
+        'sort_by': sort_by,
+        'order': order,
+        'search_query': search_query,
+    })
 
 def play_game(request, game_slug):
     if not request.user.is_authenticated:

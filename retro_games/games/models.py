@@ -16,6 +16,8 @@ class Game(models.Model):
         # Вычисляем средний рейтинг на основе отзывов
         avg_rating = self.reviews.aggregate(Avg('rating'))['rating__avg']
         return round(avg_rating, 1) if avg_rating else 0.0
+    def review_count(self):
+        return self.reviews.count()
 
 class HighScore(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='high_scores')
