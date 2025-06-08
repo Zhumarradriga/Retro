@@ -1,8 +1,23 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Retro Games{% endblock %}
 
 {% block content %}
     <h2>Welcome to Retro Games!</h2>
-    <p>Choose a game from the navigation above or view the leaderboard.</p>
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+        {% for game in games %}
+            <div style="width: 200px; text-align: center;">
+                <a href="{% url 'play_game' game.slug %}">
+                    {% if game.cover_image %}
+                        <img src="{{ game.cover_image.url }}" alt="{{ game.name }}" style="width: 100%; height: auto; border-radius: 8px;">
+                    {% else %}
+                        <img src="{% static 'default_cover.jpg' %}" alt="No cover" style="width: 100%; height: auto; border-radius: 8px;">
+                    {% endif %}
+                    <h3 style="margin: 10px 0;">{{ game.name }}</h3>
+                </a>
+                <p>Average Rating: {{ game.average_rating|floatformat:1 }}/5</p>
+            </div>
+        {% endfor %}
+    </div>
 {% endblock %}
