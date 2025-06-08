@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ game.name }}{% endblock %}
+
+{% block extra_head %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+    <script>
+        // Глобальная переменная для токена
+        let accessToken = localStorage.getItem('access_token');
+
+        // Функция для обновления токена
+        async function refreshToken() {
+            const refreshToken = localStorage.getItem('refresh_token');
+            if (!refreshToken) {
+                alert('Session expired. Please log in again.');
+                window.location.href = '/login/';
+                return null;
+            }
+            try {
+                const response = await fetch('/api/token/refresh/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh: refreshToken })
+                });
+                if (!response.ok) throw new Error('Refresh failed');
+                const data = await response.json();
+                localStorage.setItem('access_token', data.access);
+                accessToken = data.access;
+                return accessToken;
+            } catch (error) {
+                alert('Session expired. Please log in again.');
+                window.location.href = '/login/';
+                return null;
+            }
+        }
+
+        // Функция для выполнения запроса с обработкой 401
+        async function fetchWithAuth(url, options) {
+            options.headers = {
+                ...options.headers,
+                'Authorization': 'Bearer ' + accessToken,
+                'X-CSRFToken': getCookie('csrftoken')
+            };
+            let response = await fetch(url, options);
+            if (response.status === 401) {
+                const newToken = await refreshToken();
+                if (newToken) {
+                    options.headers['Authorization'] = 'Bearer ' + newToken;
+                    response = await fetch(url, options);
+                }
+            }
+            return response;
+        }
+    </script>
+    <script src="{% static game.js_file %}"></script>
+{% endblock %}
+
+{% block content %}
+    <h2>{{ game.name }}</h2>
+    <div id="game-container"></div>
+    <h3>Leave a Review</h3>
+    <form id="review-form">
+        <label for="rating">Rating (1-5):</label>
+        <input type="range" id="rating" name="rating" min="1" max="5" value="5"><br><br>
+        <label for="comment">Comment:</label><br>
+        <textarea id="comment" name="comment" rows="4" maxlength="500"></textarea><br>
+        <button type="submit">Submit Review</button>
+    </form>
+    <h3>Reviews</h3>
+    {% if reviews %}
+        {% for review in reviews %}
+            <p><strong>{{ review.user.username }}</strong> ({{ review.rating }}/5): {{ review.comment|default:"No comment" }}</p>
+        {% endfor %}
+    {% else %}
+        <p>No reviews yet.</p>
+    {% endif %}
+    <script>
+        document.getElementById('review-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (!accessToken) {
+                alert('Please log in to submit a review.');
+                window.location.href = '/login/';
+                return;
+            }
+            const options = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    game_slug: '{{ game.slug }}',
+                    rating: document.getElementById('rating').value,
+                    comment: document.getElementById('comment').value
+                })
+            };
+            try {
+                const response = await fetchWithAuth('/api/reviews/', options);
+                const data = await response.json();
+                if (data.status === 'success') {
+                    alert('Review submitted!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to submit review'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+{% endblock %}

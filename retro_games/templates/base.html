@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}Retro Games{% endblock %}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+        a {
+            margin: 10px;
+            font-size: 18px;
+            text-decoration: none;
+            color: #007bff;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        h1 {
+            color: #333;
+        }
+        .auth-links {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="auth-links">
+        {% if user.is_authenticated %}
+            <span>Welcome, {{ user.username }}!</span>
+            <a href="{% url 'logout' %}">Logout</a>
+        {% else %}
+            <a href="{% url 'login' %}">Login</a>
+            <a href="{% url 'register_view' %}">Register</a>
+        {% endif %}
+    </div>
+    <div class="container">
+        <h1>Retro Games</h1>
+        <nav>
+            <a href="{% url 'home' %}">Home</a>
+            {% for game in games %}
+                <a href="{% url 'play_game' game.slug %}">{{ game.name }}</a>
+            {% endfor %}
+            <a href="{% url 'leaderboard' %}">Leaderboard</a>
+        </div>
+        {% block content %}
+        {% endblock %}
+    </div>
+</body>
+</html>

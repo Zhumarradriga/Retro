@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}
+title>Leaderboard
+{% endblock %}
+
+{% block content %}
+    <h2>Leaderboard</h2>
+    <table style="margin: auto; border-collapse: collapse;">
+        <tr>
+            <th style="border: 1px solid black; padding: 10px;">Player</th>
+            <th style="border: 1px solid black; padding: 10px;">Score</th>
+            <th style="border: 1px solid black; padding: 10px;">Game</th>
+        </tr>
+        {% for score in scores %}
+            <tr>
+                <td style="border: 1px solid black; padding: 10px;">{{ score.user.username }}</td>
+                <td style="border: 1px solid black; padding: 10px;">{{ score.score }}</td>
+                <td style="border: 1px solid black; padding: 10px;">{{ score.game.name }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}
